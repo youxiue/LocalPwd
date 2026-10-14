@@ -1,0 +1,83 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# 签名密钥（敏感文件）
+*.jks
+*.keystore
+*.jks.old
+
+# 版本号文件（自动生成）
+/android/app/version.properties
+
+
+# ===== 敏感文件（严禁提交）=====
+# 本地数据库（含用户加密数据）
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+local_pwd.db
+
+# 环境变量与私钥
+.env
+.env.*
+*.env
+*.pem
+*.p12
+*.p8
+*.key
+
+# Android 签名配置
+/android/key.properties
+/android/app/key.properties
+
+# 构建产物
+*.apk
+*.aab
+
+# AI/IDE 内部文档与技能（非应用源码）
+.trae/

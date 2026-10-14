@@ -1,0 +1,65 @@
+name: local_pwd
+description: "本地密码管理器 - 纯本地存储，无网络"
+publish_to: 'none'
+version: 1.0.0+3
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 状态管理 + 路由 + DI
+  get: ^4.6.6
+
+  # 数据库 (SQLCipher 加密)
+  drift: ^2.16.1
+  sqlcipher_flutter_libs: ^0.6.4
+
+  # 文件路径
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # 加密
+  cryptography: ^2.7.0
+
+  # 安全存储 (盐/配置)
+  flutter_secure_storage: ^9.2.2
+
+  # 生物识别
+  local_auth: ^2.3.0
+  local_auth_android: ^1.0.30
+  local_auth_darwin: ^1.4.0
+
+  # UUID
+  uuid: ^4.4.0
+
+  # 滑动操作
+  flutter_slidable: ^3.1.0
+
+  # 文件导出/分享
+  share_plus: ^10.0.0
+  file_picker: ^8.1.2
+
+  # 读取应用版本号
+  package_info_plus: ^8.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.16.1
+  build_runner: ^2.4.11
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  image_path: assets/icon/app_icon.png
+  adaptive_icon_background: "#37BC6E"
+  adaptive_icon_foreground: assets/icon/app_icon.png
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/
