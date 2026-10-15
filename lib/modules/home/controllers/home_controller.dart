@@ -296,6 +296,11 @@ class HomeController extends GetxController {
     await _db.entryDao.toggleFavorite(entry.id, !entry.isFavorite);
   }
 
+  /// 设置指定条目的收藏状态（供详情弹窗直接写入目标值）
+  Future<void> setFavorite(String id, bool favorite) async {
+    await _db.entryDao.toggleFavorite(id, favorite);
+  }
+
   Future<void> deleteEntry(String id) async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(

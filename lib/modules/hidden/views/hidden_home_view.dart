@@ -77,7 +77,9 @@ class HiddenHomeView extends GetView<HiddenController> {
           shape: const CircleBorder(),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
-          onPressed: () => Get.toNamed(AppRoutes.hiddenEntryEdit),
+          onPressed: () => Get.toNamed(AppRoutes.hiddenEntryEdit, arguments: {
+            'categoryId': controller.selectedCategory.value,
+          }),
           child: const Icon(Icons.add),
         ),
       ),
@@ -119,7 +121,7 @@ class HiddenHomeView extends GetView<HiddenController> {
                   ),
                   SlidableAction(
                     onPressed: (_) => Get.toNamed(AppRoutes.hiddenEntryEdit,
-                        arguments: entry.id),
+                        arguments: {'entryId': entry.id}),
                     backgroundColor: Theme.of(ctx).colorScheme.primary,
                     foregroundColor: Colors.white,
                     icon: Icons.edit_outlined,
@@ -161,8 +163,12 @@ class HiddenHomeView extends GetView<HiddenController> {
     unawaited(EntryDetailSheet.show(
       title: controller.titles[entry.id] ?? '',
       detail: detail,
-      onEdit: () => Get.toNamed(AppRoutes.hiddenEntryEdit, arguments: entry.id),
+      updatedAt: entry.updatedAt,
+      isFavorite: entry.isFavorite,
+      onEdit: () => Get.toNamed(AppRoutes.hiddenEntryEdit,
+          arguments: {'entryId': entry.id}),
       onDelete: () => controller.deleteEntry(entry.id),
+      onToggleFavorite: (value) => controller.setFavorite(entry.id, value),
       onCopy: controller.copyToClipboard,
     ));
   }

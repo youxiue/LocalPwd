@@ -22,53 +22,64 @@ class EntryFormBody extends StatelessWidget {
         children: [
           TextField(
             controller: controller.titleController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '标题',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.title, size: 20),
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.title, size: 20),
+              suffixIcon: FieldClearButton(controller: controller.titleController),
             ),
           ),
           const SizedBox(height: 16),
           Obx(() {
-            final id = controller.selectedCategoryId.value;
-            final catName = id == null
-                ? '无分类'
-                : controller.categories
-                        .where((c) => c.id == id)
-                        .map((c) => c.name)
-                        .firstOrNull ??
-                    '无分类';
-            return PopupMenuButton<String>(
-              offset: const Offset(0, 56),
-              constraints: BoxConstraints(
-                minWidth: MediaQuery.of(context).size.width - 32,
-                maxWidth: MediaQuery.of(context).size.width - 32,
-              ),
+            final selectedIds = controller.selectedCategoryIds;
+            final names = controller.categories
+                .where((c) => selectedIds.contains(c.id))
+                .map((c) => c.name)
+                .toList();
+            return InkWell(
+              onTap: () => _showCategoryPickerSheet(context, controller),
               child: InputDecorator(
-                decoration: const InputDecoration(
+                // 内容为空时让 label 落回输入框内，与其它输入框保持一致
+                isEmpty: names.isEmpty,
+                decoration: InputDecoration(
                   labelText: '分类',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.folder_outlined, size: 20),
-                  suffixIcon: Icon(Icons.arrow_drop_down),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (names.isNotEmpty)
+                        IconButton(
+                          padding: const EdgeInsets.all(8),
+                          constraints:
+                              const BoxConstraints(minWidth: 32, minHeight: 32),
+                          icon: const Icon(Icons.cancel,
+                              size: 18, color: Colors.grey),
+                          tooltip: '清空',
+                          onPressed: () =>
+                              controller.setCategories(const []),
+                        ),
+                      const Icon(Icons.arrow_drop_down),
+                    ],
+                  ),
                 ),
-                child: Text(catName, style: const TextStyle(fontSize: 16)),
+                child: Text(
+                  names.join(', '),
+                  style: const TextStyle(fontSize: 16),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              itemBuilder: (_) => [
-                const PopupMenuItem(value: '', child: Text('无分类')),
-                ...controller.categories.map(
-                    (c) => PopupMenuItem(value: c.id, child: Text(c.name))),
-              ],
-              onSelected: (v) =>
-                  controller.selectCategory(v.isEmpty ? null : v),
             );
           }),
           const SizedBox(height: 16),
           TextField(
             controller: controller.usernameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '用户名',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person_outline, size: 20),
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.person_outline, size: 20),
+              suffixIcon: FieldClearButton(controller: controller.usernameController),
             ),
           ),
           const SizedBox(height: 16),
@@ -82,10 +93,11 @@ class EntryFormBody extends StatelessWidget {
                   suffixIcon: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      FieldClearButton(controller: controller.passwordController),
                       IconButton(
                         icon: Icon(controller.isObscure.value
                             ? Icons.visibility_off
-                            : Icons.visibility),
+                            : Icons.visibility, size: 20),
                         onPressed: controller.toggleObscure,
                       ),
                       IconButton(
@@ -113,20 +125,22 @@ class EntryFormBody extends StatelessWidget {
           const SizedBox(height: 16),
           TextField(
             controller: controller.urlController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '网址',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.link, size: 20),
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.link, size: 20),
+              suffixIcon: FieldClearButton(controller: controller.urlController),
             ),
             keyboardType: TextInputType.url,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: controller.notesController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '备注',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.notes, size: 20),
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.notes, size: 20),
+              suffixIcon: FieldClearButton(controller: controller.notesController),
             ),
             maxLines: 3,
           ),
@@ -202,10 +216,11 @@ class _EntryCustomFieldRowState extends State<EntryCustomFieldRow> {
             flex: 2,
             child: TextField(
               controller: _keyCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: '名称',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
+                suffixIcon: FieldClearButton(controller: _keyCtrl),
               ),
               onChanged: (v) => widget.field.key = v,
             ),
@@ -215,10 +230,11 @@ class _EntryCustomFieldRowState extends State<EntryCustomFieldRow> {
             flex: 3,
             child: TextField(
               controller: _valueCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: '值',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
+                suffixIcon: FieldClearButton(controller: _valueCtrl),
               ),
               onChanged: (v) => widget.field.value = v,
             ),
@@ -277,6 +293,146 @@ class EntryStrengthIndicator extends StatelessWidget {
           const SizedBox(height: 4),
           Text(labels[level], style: TextStyle(fontSize: 11, color: color)),
         ],
+      ),
+    );
+  }
+}
+
+/// 输入框清除按钮：内容为空时自动隐藏
+class FieldClearButton extends StatelessWidget {
+  final TextEditingController controller;
+
+  const FieldClearButton({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        if (value.text.isEmpty) return const SizedBox.shrink();
+        return IconButton(
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          icon: const Icon(Icons.cancel, size: 18, color: Colors.grey),
+          tooltip: '清空',
+          onPressed: controller.clear,
+        );
+      },
+    );
+  }
+}
+
+/// 分类多选底部弹窗：标签式排列，默认灰色、选中为主题色。
+/// 高度固定，标签过多时内容区可上下滚动；不选即视为无分类。
+void _showCategoryPickerSheet(
+    BuildContext context, EntryEditControllerBase controller) {
+  final tempSelected = controller.selectedCategoryIds.toSet();
+  final primary = Theme.of(context).colorScheme.primary;
+  final sheetHeight = MediaQuery.sizeOf(context).height * 0.5;
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetCtx) => StatefulBuilder(
+      builder: (sheetCtx, setState) {
+        final categories = controller.categories;
+        return SafeArea(
+          child: SizedBox(
+            height: sheetHeight,
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    '选择分类',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: categories.isEmpty
+                      ? Center(
+                          child: Text(
+                            '暂无分类',
+                            style: TextStyle(color: Colors.grey.shade500),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: categories
+                                .map((c) => _CategoryTag(
+                                      label: c.name,
+                                      selected: tempSelected.contains(c.id),
+                                      color: primary,
+                                      onTap: () => setState(() {
+                                        if (!tempSelected.remove(c.id)) {
+                                          tempSelected.add(c.id);
+                                        }
+                                      }),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        controller.setCategories(tempSelected.toList());
+                        Navigator.of(sheetCtx).pop();
+                      },
+                      child: const Text('确定'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+/// 分类标签：默认灰底灰字，选中为主题色底白字
+class _CategoryTag extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CategoryTag({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? color : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: selected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
       ),
     );
   }

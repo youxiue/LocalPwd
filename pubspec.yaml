@@ -1,7 +1,7 @@
 name: local_pwd
 description: "本地密码管理器 - 纯本地存储，无网络"
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.1+4
 
 environment:
   sdk: ^3.11.5

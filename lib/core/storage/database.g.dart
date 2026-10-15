@@ -422,17 +422,6 @@ class $PasswordEntriesTable extends PasswordEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
-    'categoryId',
-  );
-  @override
-  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
-    'category_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _encryptedDataMeta = const VerificationMeta(
     'encryptedData',
   );
@@ -487,7 +476,6 @@ class $PasswordEntriesTable extends PasswordEntries
   List<GeneratedColumn> get $columns => [
     id,
     title,
-    categoryId,
     encryptedData,
     isFavorite,
     createdAt,
@@ -517,12 +505,6 @@ class $PasswordEntriesTable extends PasswordEntries
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
-    }
-    if (data.containsKey('category_id')) {
-      context.handle(
-        _categoryIdMeta,
-        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
-      );
     }
     if (data.containsKey('encrypted_data')) {
       context.handle(
@@ -570,10 +552,6 @@ class $PasswordEntriesTable extends PasswordEntries
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
-      categoryId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}category_id'],
-      ),
       encryptedData: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}encrypted_data'],
@@ -602,7 +580,6 @@ class $PasswordEntriesTable extends PasswordEntries
 class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
   final String id;
   final String title;
-  final String? categoryId;
 
   /// 加密 JSON: {username, password, url, notes, customFields}
   final String encryptedData;
@@ -612,7 +589,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
   const PasswordEntry({
     required this.id,
     required this.title,
-    this.categoryId,
     required this.encryptedData,
     required this.isFavorite,
     required this.createdAt,
@@ -623,9 +599,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
-    if (!nullToAbsent || categoryId != null) {
-      map['category_id'] = Variable<String>(categoryId);
-    }
     map['encrypted_data'] = Variable<String>(encryptedData);
     map['is_favorite'] = Variable<bool>(isFavorite);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -637,9 +610,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
     return PasswordEntriesCompanion(
       id: Value(id),
       title: Value(title),
-      categoryId: categoryId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(categoryId),
       encryptedData: Value(encryptedData),
       isFavorite: Value(isFavorite),
       createdAt: Value(createdAt),
@@ -655,7 +625,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
     return PasswordEntry(
       id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
-      categoryId: serializer.fromJson<String?>(json['categoryId']),
       encryptedData: serializer.fromJson<String>(json['encryptedData']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -668,7 +637,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
-      'categoryId': serializer.toJson<String?>(categoryId),
       'encryptedData': serializer.toJson<String>(encryptedData),
       'isFavorite': serializer.toJson<bool>(isFavorite),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -679,7 +647,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
   PasswordEntry copyWith({
     String? id,
     String? title,
-    Value<String?> categoryId = const Value.absent(),
     String? encryptedData,
     bool? isFavorite,
     DateTime? createdAt,
@@ -687,7 +654,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
   }) => PasswordEntry(
     id: id ?? this.id,
     title: title ?? this.title,
-    categoryId: categoryId.present ? categoryId.value : this.categoryId,
     encryptedData: encryptedData ?? this.encryptedData,
     isFavorite: isFavorite ?? this.isFavorite,
     createdAt: createdAt ?? this.createdAt,
@@ -697,9 +663,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
     return PasswordEntry(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
-      categoryId: data.categoryId.present
-          ? data.categoryId.value
-          : this.categoryId,
       encryptedData: data.encryptedData.present
           ? data.encryptedData.value
           : this.encryptedData,
@@ -716,7 +679,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
     return (StringBuffer('PasswordEntry(')
           ..write('id: $id, ')
           ..write('title: $title, ')
-          ..write('categoryId: $categoryId, ')
           ..write('encryptedData: $encryptedData, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('createdAt: $createdAt, ')
@@ -726,22 +688,14 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    title,
-    categoryId,
-    encryptedData,
-    isFavorite,
-    createdAt,
-    updatedAt,
-  );
+  int get hashCode =>
+      Object.hash(id, title, encryptedData, isFavorite, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PasswordEntry &&
           other.id == this.id &&
           other.title == this.title &&
-          other.categoryId == this.categoryId &&
           other.encryptedData == this.encryptedData &&
           other.isFavorite == this.isFavorite &&
           other.createdAt == this.createdAt &&
@@ -751,7 +705,6 @@ class PasswordEntry extends DataClass implements Insertable<PasswordEntry> {
 class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
   final Value<String> id;
   final Value<String> title;
-  final Value<String?> categoryId;
   final Value<String> encryptedData;
   final Value<bool> isFavorite;
   final Value<DateTime> createdAt;
@@ -760,7 +713,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
   const PasswordEntriesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
-    this.categoryId = const Value.absent(),
     this.encryptedData = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -770,7 +722,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
   PasswordEntriesCompanion.insert({
     required String id,
     required String title,
-    this.categoryId = const Value.absent(),
     required String encryptedData,
     this.isFavorite = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -782,7 +733,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
   static Insertable<PasswordEntry> custom({
     Expression<String>? id,
     Expression<String>? title,
-    Expression<String>? categoryId,
     Expression<String>? encryptedData,
     Expression<bool>? isFavorite,
     Expression<DateTime>? createdAt,
@@ -792,7 +742,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
-      if (categoryId != null) 'category_id': categoryId,
       if (encryptedData != null) 'encrypted_data': encryptedData,
       if (isFavorite != null) 'is_favorite': isFavorite,
       if (createdAt != null) 'created_at': createdAt,
@@ -804,7 +753,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
   PasswordEntriesCompanion copyWith({
     Value<String>? id,
     Value<String>? title,
-    Value<String?>? categoryId,
     Value<String>? encryptedData,
     Value<bool>? isFavorite,
     Value<DateTime>? createdAt,
@@ -814,7 +762,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
     return PasswordEntriesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
-      categoryId: categoryId ?? this.categoryId,
       encryptedData: encryptedData ?? this.encryptedData,
       isFavorite: isFavorite ?? this.isFavorite,
       createdAt: createdAt ?? this.createdAt,
@@ -831,9 +778,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
-    }
-    if (categoryId.present) {
-      map['category_id'] = Variable<String>(categoryId.value);
     }
     if (encryptedData.present) {
       map['encrypted_data'] = Variable<String>(encryptedData.value);
@@ -858,7 +802,6 @@ class PasswordEntriesCompanion extends UpdateCompanion<PasswordEntry> {
     return (StringBuffer('PasswordEntriesCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
-          ..write('categoryId: $categoryId, ')
           ..write('encryptedData: $encryptedData, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('createdAt: $createdAt, ')
@@ -1280,17 +1223,6 @@ class $HiddenEntriesTable extends HiddenEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
-    'categoryId',
-  );
-  @override
-  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
-    'category_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _encryptedDataMeta = const VerificationMeta(
     'encryptedData',
   );
@@ -1344,7 +1276,6 @@ class $HiddenEntriesTable extends HiddenEntries
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    categoryId,
     encryptedData,
     isFavorite,
     createdAt,
@@ -1366,12 +1297,6 @@ class $HiddenEntriesTable extends HiddenEntries
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
-    }
-    if (data.containsKey('category_id')) {
-      context.handle(
-        _categoryIdMeta,
-        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
-      );
     }
     if (data.containsKey('encrypted_data')) {
       context.handle(
@@ -1415,10 +1340,6 @@ class $HiddenEntriesTable extends HiddenEntries
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      categoryId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}category_id'],
-      ),
       encryptedData: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}encrypted_data'],
@@ -1447,14 +1368,12 @@ class $HiddenEntriesTable extends HiddenEntries
 class HiddenPasswordEntry extends DataClass
     implements Insertable<HiddenPasswordEntry> {
   final String id;
-  final String? categoryId;
   final String encryptedData;
   final bool isFavorite;
   final DateTime createdAt;
   final DateTime updatedAt;
   const HiddenPasswordEntry({
     required this.id,
-    this.categoryId,
     required this.encryptedData,
     required this.isFavorite,
     required this.createdAt,
@@ -1464,9 +1383,6 @@ class HiddenPasswordEntry extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || categoryId != null) {
-      map['category_id'] = Variable<String>(categoryId);
-    }
     map['encrypted_data'] = Variable<String>(encryptedData);
     map['is_favorite'] = Variable<bool>(isFavorite);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -1477,9 +1393,6 @@ class HiddenPasswordEntry extends DataClass
   HiddenEntriesCompanion toCompanion(bool nullToAbsent) {
     return HiddenEntriesCompanion(
       id: Value(id),
-      categoryId: categoryId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(categoryId),
       encryptedData: Value(encryptedData),
       isFavorite: Value(isFavorite),
       createdAt: Value(createdAt),
@@ -1494,7 +1407,6 @@ class HiddenPasswordEntry extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HiddenPasswordEntry(
       id: serializer.fromJson<String>(json['id']),
-      categoryId: serializer.fromJson<String?>(json['categoryId']),
       encryptedData: serializer.fromJson<String>(json['encryptedData']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -1506,7 +1418,6 @@ class HiddenPasswordEntry extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'categoryId': serializer.toJson<String?>(categoryId),
       'encryptedData': serializer.toJson<String>(encryptedData),
       'isFavorite': serializer.toJson<bool>(isFavorite),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1516,14 +1427,12 @@ class HiddenPasswordEntry extends DataClass
 
   HiddenPasswordEntry copyWith({
     String? id,
-    Value<String?> categoryId = const Value.absent(),
     String? encryptedData,
     bool? isFavorite,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => HiddenPasswordEntry(
     id: id ?? this.id,
-    categoryId: categoryId.present ? categoryId.value : this.categoryId,
     encryptedData: encryptedData ?? this.encryptedData,
     isFavorite: isFavorite ?? this.isFavorite,
     createdAt: createdAt ?? this.createdAt,
@@ -1532,9 +1441,6 @@ class HiddenPasswordEntry extends DataClass
   HiddenPasswordEntry copyWithCompanion(HiddenEntriesCompanion data) {
     return HiddenPasswordEntry(
       id: data.id.present ? data.id.value : this.id,
-      categoryId: data.categoryId.present
-          ? data.categoryId.value
-          : this.categoryId,
       encryptedData: data.encryptedData.present
           ? data.encryptedData.value
           : this.encryptedData,
@@ -1550,7 +1456,6 @@ class HiddenPasswordEntry extends DataClass
   String toString() {
     return (StringBuffer('HiddenPasswordEntry(')
           ..write('id: $id, ')
-          ..write('categoryId: $categoryId, ')
           ..write('encryptedData: $encryptedData, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('createdAt: $createdAt, ')
@@ -1560,20 +1465,13 @@ class HiddenPasswordEntry extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    categoryId,
-    encryptedData,
-    isFavorite,
-    createdAt,
-    updatedAt,
-  );
+  int get hashCode =>
+      Object.hash(id, encryptedData, isFavorite, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is HiddenPasswordEntry &&
           other.id == this.id &&
-          other.categoryId == this.categoryId &&
           other.encryptedData == this.encryptedData &&
           other.isFavorite == this.isFavorite &&
           other.createdAt == this.createdAt &&
@@ -1582,7 +1480,6 @@ class HiddenPasswordEntry extends DataClass
 
 class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
   final Value<String> id;
-  final Value<String?> categoryId;
   final Value<String> encryptedData;
   final Value<bool> isFavorite;
   final Value<DateTime> createdAt;
@@ -1590,7 +1487,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
   final Value<int> rowid;
   const HiddenEntriesCompanion({
     this.id = const Value.absent(),
-    this.categoryId = const Value.absent(),
     this.encryptedData = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1599,7 +1495,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
   });
   HiddenEntriesCompanion.insert({
     required String id,
-    this.categoryId = const Value.absent(),
     required String encryptedData,
     this.isFavorite = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1609,7 +1504,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
        encryptedData = Value(encryptedData);
   static Insertable<HiddenPasswordEntry> custom({
     Expression<String>? id,
-    Expression<String>? categoryId,
     Expression<String>? encryptedData,
     Expression<bool>? isFavorite,
     Expression<DateTime>? createdAt,
@@ -1618,7 +1512,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (categoryId != null) 'category_id': categoryId,
       if (encryptedData != null) 'encrypted_data': encryptedData,
       if (isFavorite != null) 'is_favorite': isFavorite,
       if (createdAt != null) 'created_at': createdAt,
@@ -1629,7 +1522,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
 
   HiddenEntriesCompanion copyWith({
     Value<String>? id,
-    Value<String?>? categoryId,
     Value<String>? encryptedData,
     Value<bool>? isFavorite,
     Value<DateTime>? createdAt,
@@ -1638,7 +1530,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
   }) {
     return HiddenEntriesCompanion(
       id: id ?? this.id,
-      categoryId: categoryId ?? this.categoryId,
       encryptedData: encryptedData ?? this.encryptedData,
       isFavorite: isFavorite ?? this.isFavorite,
       createdAt: createdAt ?? this.createdAt,
@@ -1652,9 +1543,6 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
-    }
-    if (categoryId.present) {
-      map['category_id'] = Variable<String>(categoryId.value);
     }
     if (encryptedData.present) {
       map['encrypted_data'] = Variable<String>(encryptedData.value);
@@ -1678,11 +1566,470 @@ class HiddenEntriesCompanion extends UpdateCompanion<HiddenPasswordEntry> {
   String toString() {
     return (StringBuffer('HiddenEntriesCompanion(')
           ..write('id: $id, ')
-          ..write('categoryId: $categoryId, ')
           ..write('encryptedData: $encryptedData, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PasswordEntryCategoriesTable extends PasswordEntryCategories
+    with TableInfo<$PasswordEntryCategoriesTable, PasswordEntryCategoryLink> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PasswordEntryCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entryIdMeta = const VerificationMeta(
+    'entryId',
+  );
+  @override
+  late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
+    'entry_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [entryId, categoryId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'password_entry_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PasswordEntryCategoryLink> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entry_id')) {
+      context.handle(
+        _entryIdMeta,
+        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryIdMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entryId, categoryId};
+  @override
+  PasswordEntryCategoryLink map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PasswordEntryCategoryLink(
+      entryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_id'],
+      )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      )!,
+    );
+  }
+
+  @override
+  $PasswordEntryCategoriesTable createAlias(String alias) {
+    return $PasswordEntryCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class PasswordEntryCategoryLink extends DataClass
+    implements Insertable<PasswordEntryCategoryLink> {
+  final String entryId;
+  final String categoryId;
+  const PasswordEntryCategoryLink({
+    required this.entryId,
+    required this.categoryId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entry_id'] = Variable<String>(entryId);
+    map['category_id'] = Variable<String>(categoryId);
+    return map;
+  }
+
+  PasswordEntryCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return PasswordEntryCategoriesCompanion(
+      entryId: Value(entryId),
+      categoryId: Value(categoryId),
+    );
+  }
+
+  factory PasswordEntryCategoryLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PasswordEntryCategoryLink(
+      entryId: serializer.fromJson<String>(json['entryId']),
+      categoryId: serializer.fromJson<String>(json['categoryId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entryId': serializer.toJson<String>(entryId),
+      'categoryId': serializer.toJson<String>(categoryId),
+    };
+  }
+
+  PasswordEntryCategoryLink copyWith({String? entryId, String? categoryId}) =>
+      PasswordEntryCategoryLink(
+        entryId: entryId ?? this.entryId,
+        categoryId: categoryId ?? this.categoryId,
+      );
+  PasswordEntryCategoryLink copyWithCompanion(
+    PasswordEntryCategoriesCompanion data,
+  ) {
+    return PasswordEntryCategoryLink(
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PasswordEntryCategoryLink(')
+          ..write('entryId: $entryId, ')
+          ..write('categoryId: $categoryId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entryId, categoryId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PasswordEntryCategoryLink &&
+          other.entryId == this.entryId &&
+          other.categoryId == this.categoryId);
+}
+
+class PasswordEntryCategoriesCompanion
+    extends UpdateCompanion<PasswordEntryCategoryLink> {
+  final Value<String> entryId;
+  final Value<String> categoryId;
+  final Value<int> rowid;
+  const PasswordEntryCategoriesCompanion({
+    this.entryId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PasswordEntryCategoriesCompanion.insert({
+    required String entryId,
+    required String categoryId,
+    this.rowid = const Value.absent(),
+  }) : entryId = Value(entryId),
+       categoryId = Value(categoryId);
+  static Insertable<PasswordEntryCategoryLink> custom({
+    Expression<String>? entryId,
+    Expression<String>? categoryId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entryId != null) 'entry_id': entryId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PasswordEntryCategoriesCompanion copyWith({
+    Value<String>? entryId,
+    Value<String>? categoryId,
+    Value<int>? rowid,
+  }) {
+    return PasswordEntryCategoriesCompanion(
+      entryId: entryId ?? this.entryId,
+      categoryId: categoryId ?? this.categoryId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entryId.present) {
+      map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PasswordEntryCategoriesCompanion(')
+          ..write('entryId: $entryId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HiddenEntryCategoriesTable extends HiddenEntryCategories
+    with TableInfo<$HiddenEntryCategoriesTable, HiddenEntryCategoryLink> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HiddenEntryCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entryIdMeta = const VerificationMeta(
+    'entryId',
+  );
+  @override
+  late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
+    'entry_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [entryId, categoryId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'hidden_entry_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HiddenEntryCategoryLink> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entry_id')) {
+      context.handle(
+        _entryIdMeta,
+        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryIdMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entryId, categoryId};
+  @override
+  HiddenEntryCategoryLink map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HiddenEntryCategoryLink(
+      entryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_id'],
+      )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      )!,
+    );
+  }
+
+  @override
+  $HiddenEntryCategoriesTable createAlias(String alias) {
+    return $HiddenEntryCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class HiddenEntryCategoryLink extends DataClass
+    implements Insertable<HiddenEntryCategoryLink> {
+  final String entryId;
+  final String categoryId;
+  const HiddenEntryCategoryLink({
+    required this.entryId,
+    required this.categoryId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entry_id'] = Variable<String>(entryId);
+    map['category_id'] = Variable<String>(categoryId);
+    return map;
+  }
+
+  HiddenEntryCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return HiddenEntryCategoriesCompanion(
+      entryId: Value(entryId),
+      categoryId: Value(categoryId),
+    );
+  }
+
+  factory HiddenEntryCategoryLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HiddenEntryCategoryLink(
+      entryId: serializer.fromJson<String>(json['entryId']),
+      categoryId: serializer.fromJson<String>(json['categoryId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entryId': serializer.toJson<String>(entryId),
+      'categoryId': serializer.toJson<String>(categoryId),
+    };
+  }
+
+  HiddenEntryCategoryLink copyWith({String? entryId, String? categoryId}) =>
+      HiddenEntryCategoryLink(
+        entryId: entryId ?? this.entryId,
+        categoryId: categoryId ?? this.categoryId,
+      );
+  HiddenEntryCategoryLink copyWithCompanion(
+    HiddenEntryCategoriesCompanion data,
+  ) {
+    return HiddenEntryCategoryLink(
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HiddenEntryCategoryLink(')
+          ..write('entryId: $entryId, ')
+          ..write('categoryId: $categoryId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entryId, categoryId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HiddenEntryCategoryLink &&
+          other.entryId == this.entryId &&
+          other.categoryId == this.categoryId);
+}
+
+class HiddenEntryCategoriesCompanion
+    extends UpdateCompanion<HiddenEntryCategoryLink> {
+  final Value<String> entryId;
+  final Value<String> categoryId;
+  final Value<int> rowid;
+  const HiddenEntryCategoriesCompanion({
+    this.entryId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HiddenEntryCategoriesCompanion.insert({
+    required String entryId,
+    required String categoryId,
+    this.rowid = const Value.absent(),
+  }) : entryId = Value(entryId),
+       categoryId = Value(categoryId);
+  static Insertable<HiddenEntryCategoryLink> custom({
+    Expression<String>? entryId,
+    Expression<String>? categoryId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entryId != null) 'entry_id': entryId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HiddenEntryCategoriesCompanion copyWith({
+    Value<String>? entryId,
+    Value<String>? categoryId,
+    Value<int>? rowid,
+  }) {
+    return HiddenEntryCategoriesCompanion(
+      entryId: entryId ?? this.entryId,
+      categoryId: categoryId ?? this.categoryId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entryId.present) {
+      map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HiddenEntryCategoriesCompanion(')
+          ..write('entryId: $entryId, ')
+          ..write('categoryId: $categoryId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1700,6 +2047,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $HiddenEntriesTable hiddenEntries = $HiddenEntriesTable(this);
+  late final $PasswordEntryCategoriesTable passwordEntryCategories =
+      $PasswordEntryCategoriesTable(this);
+  late final $HiddenEntryCategoriesTable hiddenEntryCategories =
+      $HiddenEntryCategoriesTable(this);
   late final EntryDao entryDao = EntryDao(this as AppDatabase);
   late final CategoryDao categoryDao = CategoryDao(this as AppDatabase);
   late final HiddenDao hiddenDao = HiddenDao(this as AppDatabase);
@@ -1712,6 +2063,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     passwordEntries,
     hiddenCategories,
     hiddenEntries,
+    passwordEntryCategories,
+    hiddenEntryCategories,
   ];
 }
 
@@ -1938,7 +2291,6 @@ typedef $$PasswordEntriesTableCreateCompanionBuilder =
     PasswordEntriesCompanion Function({
       required String id,
       required String title,
-      Value<String?> categoryId,
       required String encryptedData,
       Value<bool> isFavorite,
       Value<DateTime> createdAt,
@@ -1949,7 +2301,6 @@ typedef $$PasswordEntriesTableUpdateCompanionBuilder =
     PasswordEntriesCompanion Function({
       Value<String> id,
       Value<String> title,
-      Value<String?> categoryId,
       Value<String> encryptedData,
       Value<bool> isFavorite,
       Value<DateTime> createdAt,
@@ -1973,11 +2324,6 @@ class $$PasswordEntriesTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2021,11 +2367,6 @@ class $$PasswordEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get encryptedData => $composableBuilder(
     column: $table.encryptedData,
     builder: (column) => ColumnOrderings(column),
@@ -2061,11 +2402,6 @@ class $$PasswordEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
-
-  GeneratedColumn<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get encryptedData => $composableBuilder(
     column: $table.encryptedData,
@@ -2119,7 +2455,6 @@ class $$PasswordEntriesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
-                Value<String?> categoryId = const Value.absent(),
                 Value<String> encryptedData = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2128,7 +2463,6 @@ class $$PasswordEntriesTableTableManager
               }) => PasswordEntriesCompanion(
                 id: id,
                 title: title,
-                categoryId: categoryId,
                 encryptedData: encryptedData,
                 isFavorite: isFavorite,
                 createdAt: createdAt,
@@ -2139,7 +2473,6 @@ class $$PasswordEntriesTableTableManager
               ({
                 required String id,
                 required String title,
-                Value<String?> categoryId = const Value.absent(),
                 required String encryptedData,
                 Value<bool> isFavorite = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2148,7 +2481,6 @@ class $$PasswordEntriesTableTableManager
               }) => PasswordEntriesCompanion.insert(
                 id: id,
                 title: title,
-                categoryId: categoryId,
                 encryptedData: encryptedData,
                 isFavorite: isFavorite,
                 createdAt: createdAt,
@@ -2412,7 +2744,6 @@ typedef $$HiddenCategoriesTableProcessedTableManager =
 typedef $$HiddenEntriesTableCreateCompanionBuilder =
     HiddenEntriesCompanion Function({
       required String id,
-      Value<String?> categoryId,
       required String encryptedData,
       Value<bool> isFavorite,
       Value<DateTime> createdAt,
@@ -2422,7 +2753,6 @@ typedef $$HiddenEntriesTableCreateCompanionBuilder =
 typedef $$HiddenEntriesTableUpdateCompanionBuilder =
     HiddenEntriesCompanion Function({
       Value<String> id,
-      Value<String?> categoryId,
       Value<String> encryptedData,
       Value<bool> isFavorite,
       Value<DateTime> createdAt,
@@ -2441,11 +2771,6 @@ class $$HiddenEntriesTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2484,11 +2809,6 @@ class $$HiddenEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get encryptedData => $composableBuilder(
     column: $table.encryptedData,
     builder: (column) => ColumnOrderings(column),
@@ -2521,11 +2841,6 @@ class $$HiddenEntriesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get categoryId => $composableBuilder(
-    column: $table.categoryId,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get encryptedData => $composableBuilder(
     column: $table.encryptedData,
@@ -2580,7 +2895,6 @@ class $$HiddenEntriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String?> categoryId = const Value.absent(),
                 Value<String> encryptedData = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2588,7 +2902,6 @@ class $$HiddenEntriesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HiddenEntriesCompanion(
                 id: id,
-                categoryId: categoryId,
                 encryptedData: encryptedData,
                 isFavorite: isFavorite,
                 createdAt: createdAt,
@@ -2598,7 +2911,6 @@ class $$HiddenEntriesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                Value<String?> categoryId = const Value.absent(),
                 required String encryptedData,
                 Value<bool> isFavorite = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2606,7 +2918,6 @@ class $$HiddenEntriesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HiddenEntriesCompanion.insert(
                 id: id,
-                categoryId: categoryId,
                 encryptedData: encryptedData,
                 isFavorite: isFavorite,
                 createdAt: createdAt,
@@ -2638,6 +2949,334 @@ typedef $$HiddenEntriesTableProcessedTableManager =
       HiddenPasswordEntry,
       PrefetchHooks Function()
     >;
+typedef $$PasswordEntryCategoriesTableCreateCompanionBuilder =
+    PasswordEntryCategoriesCompanion Function({
+      required String entryId,
+      required String categoryId,
+      Value<int> rowid,
+    });
+typedef $$PasswordEntryCategoriesTableUpdateCompanionBuilder =
+    PasswordEntryCategoriesCompanion Function({
+      Value<String> entryId,
+      Value<String> categoryId,
+      Value<int> rowid,
+    });
+
+class $$PasswordEntryCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $PasswordEntryCategoriesTable> {
+  $$PasswordEntryCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PasswordEntryCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PasswordEntryCategoriesTable> {
+  $$PasswordEntryCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PasswordEntryCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PasswordEntryCategoriesTable> {
+  $$PasswordEntryCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+}
+
+class $$PasswordEntryCategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PasswordEntryCategoriesTable,
+          PasswordEntryCategoryLink,
+          $$PasswordEntryCategoriesTableFilterComposer,
+          $$PasswordEntryCategoriesTableOrderingComposer,
+          $$PasswordEntryCategoriesTableAnnotationComposer,
+          $$PasswordEntryCategoriesTableCreateCompanionBuilder,
+          $$PasswordEntryCategoriesTableUpdateCompanionBuilder,
+          (
+            PasswordEntryCategoryLink,
+            BaseReferences<
+              _$AppDatabase,
+              $PasswordEntryCategoriesTable,
+              PasswordEntryCategoryLink
+            >,
+          ),
+          PasswordEntryCategoryLink,
+          PrefetchHooks Function()
+        > {
+  $$PasswordEntryCategoriesTableTableManager(
+    _$AppDatabase db,
+    $PasswordEntryCategoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PasswordEntryCategoriesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$PasswordEntryCategoriesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PasswordEntryCategoriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> entryId = const Value.absent(),
+                Value<String> categoryId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PasswordEntryCategoriesCompanion(
+                entryId: entryId,
+                categoryId: categoryId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entryId,
+                required String categoryId,
+                Value<int> rowid = const Value.absent(),
+              }) => PasswordEntryCategoriesCompanion.insert(
+                entryId: entryId,
+                categoryId: categoryId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PasswordEntryCategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PasswordEntryCategoriesTable,
+      PasswordEntryCategoryLink,
+      $$PasswordEntryCategoriesTableFilterComposer,
+      $$PasswordEntryCategoriesTableOrderingComposer,
+      $$PasswordEntryCategoriesTableAnnotationComposer,
+      $$PasswordEntryCategoriesTableCreateCompanionBuilder,
+      $$PasswordEntryCategoriesTableUpdateCompanionBuilder,
+      (
+        PasswordEntryCategoryLink,
+        BaseReferences<
+          _$AppDatabase,
+          $PasswordEntryCategoriesTable,
+          PasswordEntryCategoryLink
+        >,
+      ),
+      PasswordEntryCategoryLink,
+      PrefetchHooks Function()
+    >;
+typedef $$HiddenEntryCategoriesTableCreateCompanionBuilder =
+    HiddenEntryCategoriesCompanion Function({
+      required String entryId,
+      required String categoryId,
+      Value<int> rowid,
+    });
+typedef $$HiddenEntryCategoriesTableUpdateCompanionBuilder =
+    HiddenEntryCategoriesCompanion Function({
+      Value<String> entryId,
+      Value<String> categoryId,
+      Value<int> rowid,
+    });
+
+class $$HiddenEntryCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $HiddenEntryCategoriesTable> {
+  $$HiddenEntryCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$HiddenEntryCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $HiddenEntryCategoriesTable> {
+  $$HiddenEntryCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$HiddenEntryCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HiddenEntryCategoriesTable> {
+  $$HiddenEntryCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+}
+
+class $$HiddenEntryCategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $HiddenEntryCategoriesTable,
+          HiddenEntryCategoryLink,
+          $$HiddenEntryCategoriesTableFilterComposer,
+          $$HiddenEntryCategoriesTableOrderingComposer,
+          $$HiddenEntryCategoriesTableAnnotationComposer,
+          $$HiddenEntryCategoriesTableCreateCompanionBuilder,
+          $$HiddenEntryCategoriesTableUpdateCompanionBuilder,
+          (
+            HiddenEntryCategoryLink,
+            BaseReferences<
+              _$AppDatabase,
+              $HiddenEntryCategoriesTable,
+              HiddenEntryCategoryLink
+            >,
+          ),
+          HiddenEntryCategoryLink,
+          PrefetchHooks Function()
+        > {
+  $$HiddenEntryCategoriesTableTableManager(
+    _$AppDatabase db,
+    $HiddenEntryCategoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HiddenEntryCategoriesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$HiddenEntryCategoriesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$HiddenEntryCategoriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> entryId = const Value.absent(),
+                Value<String> categoryId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => HiddenEntryCategoriesCompanion(
+                entryId: entryId,
+                categoryId: categoryId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entryId,
+                required String categoryId,
+                Value<int> rowid = const Value.absent(),
+              }) => HiddenEntryCategoriesCompanion.insert(
+                entryId: entryId,
+                categoryId: categoryId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$HiddenEntryCategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $HiddenEntryCategoriesTable,
+      HiddenEntryCategoryLink,
+      $$HiddenEntryCategoriesTableFilterComposer,
+      $$HiddenEntryCategoriesTableOrderingComposer,
+      $$HiddenEntryCategoriesTableAnnotationComposer,
+      $$HiddenEntryCategoriesTableCreateCompanionBuilder,
+      $$HiddenEntryCategoriesTableUpdateCompanionBuilder,
+      (
+        HiddenEntryCategoryLink,
+        BaseReferences<
+          _$AppDatabase,
+          $HiddenEntryCategoriesTable,
+          HiddenEntryCategoryLink
+        >,
+      ),
+      HiddenEntryCategoryLink,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2650,4 +3289,11 @@ class $AppDatabaseManager {
       $$HiddenCategoriesTableTableManager(_db, _db.hiddenCategories);
   $$HiddenEntriesTableTableManager get hiddenEntries =>
       $$HiddenEntriesTableTableManager(_db, _db.hiddenEntries);
+  $$PasswordEntryCategoriesTableTableManager get passwordEntryCategories =>
+      $$PasswordEntryCategoriesTableTableManager(
+        _db,
+        _db.passwordEntryCategories,
+      );
+  $$HiddenEntryCategoriesTableTableManager get hiddenEntryCategories =>
+      $$HiddenEntryCategoriesTableTableManager(_db, _db.hiddenEntryCategories);
 }

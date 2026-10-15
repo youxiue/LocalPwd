@@ -37,13 +37,14 @@ abstract class EntryEditControllerBase extends GetxController {
   final notesController = TextEditingController();
 
   final categories = <EntryCategoryOption>[].obs;
-  final selectedCategoryId = Rxn<String?>(null);
+  final selectedCategoryIds = <String>[].obs;
   final customFields = <CustomField>[].obs;
   final isEditing = false.obs;
   final isObscure = true.obs;
   final passwordStrength = (-1).obs; // -1 = 未输入
 
   String? entryId;
+  String? initialCategoryId;
 
   // ---- 差异点（子类实现）----
 
@@ -55,7 +56,7 @@ abstract class EntryEditControllerBase extends GetxController {
 
   /// 读取待编辑条目的原始（未解密）数据；不存在时返回 null。
   /// [title] 为 null 表示标题存在加密体内（隐藏模式），由解密结果回填。
-  Future<({String? title, String? categoryId, String encryptedData})?>
+  Future<({String? title, List<String> categoryIds, String encryptedData})?>
       loadRawEntry(String id);
 
   /// 写库：新增或更新由 [isNew] 区分
@@ -63,14 +64,18 @@ abstract class EntryEditControllerBase extends GetxController {
     required String id,
     required bool isNew,
     required String title,
-    required String? categoryId,
+    required List<String> categoryIds,
     required String encryptedData,
   });
 
   @override
   void onInit() {
     super.onInit();
-    entryId = Get.arguments as String?;
+    final args = Get.arguments;
+    if (args is Map) {
+      entryId = args['entryId'] as String?;
+      initialCategoryId = args['categoryId'] as String?;
+    }
     passwordController.addListener(_updateStrength);
     _init();
   }
@@ -92,7 +97,7 @@ abstract class EntryEditControllerBase extends GetxController {
           return;
         }
         isEditing.value = true;
-        selectedCategoryId.value = raw.categoryId;
+        selectedCategoryIds.assignAll(raw.categoryIds);
 
         try {
           final decrypted = DecryptedEntry.fromJson(
@@ -111,6 +116,9 @@ abstract class EntryEditControllerBase extends GetxController {
           AppNotification.error('错误', '数据解密失败');
         }
       }
+    } else if (initialCategoryId != null) {
+      // 新增条目：默认选中首页侧栏当前分类
+      selectedCategoryIds.add(initialCategoryId!);
     }
   }
 
@@ -126,8 +134,9 @@ abstract class EntryEditControllerBase extends GetxController {
 
   void toggleObscure() => isObscure.value = !isObscure.value;
 
-  void selectCategory(String? id) {
-    selectedCategoryId.value = id;
+  /// 底部弹窗多选：整体应用所选分类集合（空列表 = 无分类）
+  void setCategories(List<String> ids) {
+    selectedCategoryIds.assignAll(ids);
   }
 
   Future<void> save() async {
@@ -161,7 +170,7 @@ abstract class EntryEditControllerBase extends GetxController {
       id: isUpdate ? entryId! : _uuid.v4(),
       isNew: !isUpdate,
       title: title,
-      categoryId: selectedCategoryId.value,
+      categoryIds: selectedCategoryIds.toList(),
       encryptedData: encrypted,
     );
 
@@ -196,13 +205,13 @@ class EntryEditController extends EntryEditControllerBase {
   }
 
   @override
-  Future<({String title, String? categoryId, String encryptedData})?>
+  Future<({String? title, List<String> categoryIds, String encryptedData})?>
       loadRawEntry(String id) async {
     final entry = await _db.entryDao.getById(id);
     if (entry == null) return null;
     return (
       title: entry.title,
-      categoryId: entry.categoryId,
+      categoryIds: await _db.entryDao.categoryIdsForEntry(id),
       encryptedData: entry.encryptedData,
     );
   }
@@ -212,28 +221,29 @@ class EntryEditController extends EntryEditControllerBase {
     required String id,
     required bool isNew,
     required String title,
-    required String? categoryId,
+    required List<String> categoryIds,
     required String encryptedData,
   }) async {
-    if (isNew) {
-      await _db.entryDao.addEntry(
-        PasswordEntriesCompanion.insert(
-          id: id,
-          title: title,
-          categoryId: Value(categoryId),
-          encryptedData: encryptedData,
-        ),
-      );
-    } else {
-      await _db.entryDao.updateEntry(
-        PasswordEntriesCompanion(
-          id: Value(id),
-          title: Value(title),
-          categoryId: Value(categoryId),
-          encryptedData: Value(encryptedData),
-          updatedAt: Value(DateTime.now()),
-        ),
-      );
-    }
+    await _db.transaction(() async {
+      if (isNew) {
+        await _db.entryDao.addEntry(
+          PasswordEntriesCompanion.insert(
+            id: id,
+            title: title,
+            encryptedData: encryptedData,
+          ),
+        );
+      } else {
+        await _db.entryDao.updateEntry(
+          PasswordEntriesCompanion(
+            id: Value(id),
+            title: Value(title),
+            encryptedData: Value(encryptedData),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+      await _db.entryDao.setEntryCategories(id, categoryIds);
+    });
   }
 }

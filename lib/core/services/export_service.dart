@@ -16,7 +16,8 @@ class ExportService {
   static final ExportService instance = ExportService._();
 
   /// 当前支持的备份格式版本
-  static const int supportedVersion = 2;
+  /// v3：条目分类改为 categoryIds 多选列表（v1/v2 为单分类 categoryId）
+  static const int supportedVersion = 3;
 
   final _crypto = CryptoService.instance;
 
@@ -75,6 +76,7 @@ class ExportService {
     if (isHidden) {
       final entries = await db.hiddenDao.getAllEntries();
       final categories = await db.hiddenDao.getAllCategories();
+      final links = await db.hiddenDao.allEntryCategoryLinks();
       return {
         'version': supportedVersion,
         'type': 'hidden',
@@ -90,11 +92,13 @@ class ExportService {
           entries: entries,
           sessionKey: sessionKey,
           titleFromColumn: false,
+          links: links,
         ),
       };
     } else {
       final entries = await db.entryDao.getAllEntries();
       final categories = await db.categoryDao.getAll();
+      final links = await db.entryDao.allEntryCategoryLinks();
       return {
         'version': supportedVersion,
         'type': 'normal',
@@ -110,6 +114,7 @@ class ExportService {
           entries: entries,
           sessionKey: sessionKey,
           titleFromColumn: true,
+          links: links,
         ),
       };
     }
@@ -122,6 +127,7 @@ class ExportService {
     required List entries,
     required SecretKey sessionKey,
     required bool titleFromColumn,
+    required Map<String, List<String>> links,
   }) async {
     final result = <Map<String, dynamic>>[];
     for (final entry in entries) {
@@ -133,7 +139,7 @@ class ExportService {
         result.add({
           'id': entry.id,
           'title': title,
-          'categoryId': entry.categoryId,
+          'categoryIds': links[entry.id] ?? const <String>[],
           'decryptedData': decrypted,
           'isFavorite': entry.isFavorite,
           'createdAt': entry.createdAt.toIso8601String(),
@@ -217,10 +223,13 @@ class ExportService {
           PasswordEntriesCompanion.insert(
             id: m['id'] as String,
             title: m['title'] as String,
-            categoryId: Value(m['categoryId'] as String?),
             encryptedData: reEncrypted,
             isFavorite: Value(m['isFavorite'] as bool? ?? false),
           ),
+        );
+        await db.entryDao.setEntryCategories(
+          m['id'] as String,
+          _categoryIdsOf(m),
         );
       }
     });
@@ -260,12 +269,25 @@ class ExportService {
         await db.into(db.hiddenEntries).insertOnConflictUpdate(
           HiddenEntriesCompanion.insert(
             id: m['id'] as String,
-            categoryId: Value(m['categoryId'] as String?),
             encryptedData: reEncrypted,
             isFavorite: Value(m['isFavorite'] as bool? ?? false),
           ),
         );
+        await db.hiddenDao.setEntryCategories(
+          m['id'] as String,
+          _categoryIdsOf(m),
+        );
       }
     });
+  }
+
+  /// 解析条目的分类 ID 列表；兼容旧版备份的单分类 categoryId 字段
+  static List<String> _categoryIdsOf(Map<String, dynamic> m) {
+    final ids = m['categoryIds'];
+    if (ids is List) {
+      return ids.whereType<String>().toList();
+    }
+    final legacy = m['categoryId'];
+    return legacy is String ? [legacy] : const <String>[];
   }
 }

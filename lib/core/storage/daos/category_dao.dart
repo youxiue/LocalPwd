@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart';
 import '../database.dart';
 import '../tables/categories.dart';
+import '../tables/entry_category_links.dart';
 
 part 'category_dao.g.dart';
 
-@DriftAccessor(tables: [Categories])
+@DriftAccessor(tables: [Categories, PasswordEntryCategories])
 class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin {
   CategoryDao(super.db);
 
@@ -32,8 +33,13 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin 
           .write(c)
           .then((r) => r > 0);
 
-  Future<int> deleteCategory(String id) =>
-      (delete(categories)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteCategory(String id) async {
+    // 删除分类时同步清理条目关联
+    await (delete(passwordEntryCategories)
+          ..where((t) => t.categoryId.equals(id)))
+        .go();
+    return (delete(categories)..where((t) => t.id.equals(id))).go();
+  }
 
   Future<void> updateSortOrder(List<String> ids) async {
     await batch((b) {

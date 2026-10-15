@@ -16,10 +16,10 @@ class HiddenCategories extends Table {
 
 /// 隐藏模式密码条目表 — 与正常条目完全隔离
 /// 标题与正文统一加密在 encryptedData 内，表中不保留可辨识的明文字段
+/// 条目与分类为多对多关系，关联存储在 HiddenEntryCategories 表
 @DataClassName('HiddenPasswordEntry')
 class HiddenEntries extends Table {
   TextColumn get id => text()();
-  TextColumn get categoryId => text().nullable()();
   TextColumn get encryptedData => text()();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

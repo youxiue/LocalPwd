@@ -74,7 +74,9 @@ class HomeView extends GetView<HomeController> {
           shape: const CircleBorder(),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
-          onPressed: () => Get.toNamed(AppRoutes.entryEdit),
+          onPressed: () => Get.toNamed(AppRoutes.entryEdit, arguments: {
+            'categoryId': controller.selectedCategory.value,
+          }),
           child: const Icon(Icons.add),
         ),
       ),
@@ -106,7 +108,8 @@ class HomeView extends GetView<HomeController> {
               entry: entry,
               username: controller.usernames[entry.id] ?? '',
               onTap: () => _showEntryDetail(entry),
-              onEdit: () => Get.toNamed(AppRoutes.entryEdit, arguments: entry.id),
+              onEdit: () => Get.toNamed(AppRoutes.entryEdit,
+                  arguments: {'entryId': entry.id}),
               onDelete: () => controller.deleteEntry(entry.id),
               onFavorite: () => controller.toggleFavorite(entry),
             );
@@ -125,8 +128,12 @@ class HomeView extends GetView<HomeController> {
     unawaited(EntryDetailSheet.show(
       title: entry.title,
       detail: detail,
-      onEdit: () => Get.toNamed(AppRoutes.entryEdit, arguments: entry.id),
+      updatedAt: entry.updatedAt,
+      isFavorite: entry.isFavorite,
+      onEdit: () => Get.toNamed(AppRoutes.entryEdit,
+          arguments: {'entryId': entry.id}),
       onDelete: () => controller.deleteEntry(entry.id),
+      onToggleFavorite: (value) => controller.setFavorite(entry.id, value),
       onCopy: controller.copyToClipboard,
     ));
   }

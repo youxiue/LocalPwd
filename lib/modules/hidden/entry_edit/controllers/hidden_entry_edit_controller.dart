@@ -22,13 +22,13 @@ class HiddenEntryEditController extends EntryEditControllerBase {
   }
 
   @override
-  Future<({String? title, String? categoryId, String encryptedData})?>
+  Future<({String? title, List<String> categoryIds, String encryptedData})?>
       loadRawEntry(String id) async {
     final entry = await _db.hiddenDao.getById(id);
     if (entry == null) return null;
     return (
       title: null, // 标题已加密在 encryptedData 内，解密后由基类回填
-      categoryId: entry.categoryId,
+      categoryIds: await _db.hiddenDao.categoryIdsForEntry(id),
       encryptedData: entry.encryptedData,
     );
   }
@@ -38,26 +38,27 @@ class HiddenEntryEditController extends EntryEditControllerBase {
     required String id,
     required bool isNew,
     required String title,
-    required String? categoryId,
+    required List<String> categoryIds,
     required String encryptedData,
   }) async {
-    if (isNew) {
-      await _db.hiddenDao.addEntry(
-        HiddenEntriesCompanion.insert(
-          id: id,
-          categoryId: Value(categoryId),
-          encryptedData: encryptedData,
-        ),
-      );
-    } else {
-      await _db.hiddenDao.updateEntry(
-        HiddenEntriesCompanion(
-          id: Value(id),
-          categoryId: Value(categoryId),
-          encryptedData: Value(encryptedData),
-          updatedAt: Value(DateTime.now()),
-        ),
-      );
-    }
+    await _db.transaction(() async {
+      if (isNew) {
+        await _db.hiddenDao.addEntry(
+          HiddenEntriesCompanion.insert(
+            id: id,
+            encryptedData: encryptedData,
+          ),
+        );
+      } else {
+        await _db.hiddenDao.updateEntry(
+          HiddenEntriesCompanion(
+            id: Value(id),
+            encryptedData: Value(encryptedData),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+      await _db.hiddenDao.setEntryCategories(id, categoryIds);
+    });
   }
 }

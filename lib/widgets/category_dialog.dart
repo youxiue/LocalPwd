@@ -233,7 +233,7 @@ class _CategoryDialogState extends State<CategoryDialog> {
                   ),
                   const SizedBox(height: 24),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       TextButton(onPressed: Get.back, child: const Text('取消')),
                       const SizedBox(width: 8),

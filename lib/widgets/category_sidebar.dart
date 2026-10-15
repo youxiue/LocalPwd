@@ -41,7 +41,11 @@ class CategorySidebar extends StatelessWidget {
       width: 72,
       color: Colors.white,
       child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        // 底部预留安全区 + 固定间距，避免分类过多时添加按钮贴底难点击
+        padding: EdgeInsets.only(
+          top: 4,
+          bottom: MediaQuery.paddingOf(context).bottom + 24,
+        ),
         children: [
           _buildItem(
             icon: Icons.apps,

@@ -20,6 +20,10 @@ class LockService with WidgetsBindingObserver {
   Timer? _maskTimer;
   DateTime? _pausedTime;
 
+  /// 定时器代次：回到前台或锁定时递增，
+  /// 用于丢弃仍在异步读取配置过程中的过期定时任务（防止回前台后误锁定）
+  int _timerEpoch = 0;
+
   /// 遮罩可见性（退后台时显示，回前台时隐藏）
   final isMasked = false.obs;
 
@@ -43,6 +47,7 @@ class LockService with WidgetsBindingObserver {
 
   /// 锁定应用的唯一入口：清密钥、清剪贴板、跳转解锁页
   void _lockAndRoute() {
+    _timerEpoch++; // 使挂起的定时任务全部失效
     _lockTimer?.cancel();
     _lockTimer = null;
     _maskTimer?.cancel();
@@ -83,6 +88,9 @@ class LockService with WidgetsBindingObserver {
         _startLockTimer();
         break;
       case AppLifecycleState.resumed:
+        // 递增代次：使后台期间尚未完成配置读取的定时任务失效，
+        // 否则回到前台后会突然弹出一个迟到的锁定，表现为"用着用着要求重新验证"
+        _timerEpoch++;
         _maskTimer?.cancel();
         _lockTimer?.cancel();
         _lockTimer = null;
@@ -98,20 +106,27 @@ class LockService with WidgetsBindingObserver {
     }
   }
 
-  void _startLockTimer() async {
-    try {
-      final minutes = await _auth.getAutoLockMinutes();
-      _lockTimer?.cancel();
-      _lockTimer = Timer(Duration(minutes: minutes), () {
-        _lockAndRoute();
-      });
-    } catch (_) {
+  void _startLockTimer() {
+    final epoch = _timerEpoch;
+    _auth.getAutoLockMinutes().then((minutes) {
+      _scheduleLockTimer(epoch, Duration(minutes: minutes));
+    }).catchError((_) {
       // 读取配置失败时使用默认值
-      _lockTimer?.cancel();
-      _lockTimer = Timer(Duration(minutes: AppConstants.defaultAutoLockMinutes), () {
-        _lockAndRoute();
-      });
-    }
+      _scheduleLockTimer(
+          epoch, Duration(minutes: AppConstants.defaultAutoLockMinutes));
+    });
+  }
+
+  /// 仅当代次未变化（期间没有回前台/锁定）时才真正挂上定时器，
+  /// 且回调触发时应用必须仍处于后台，避免在前台使用中误锁定
+  void _scheduleLockTimer(int epoch, Duration duration) {
+    if (epoch != _timerEpoch) return;
+    _lockTimer = Timer(duration, () {
+      if (epoch != _timerEpoch) return;
+      final state = WidgetsBinding.instance.lifecycleState;
+      if (state != AppLifecycleState.paused) return;
+      _lockAndRoute();
+    });
   }
 
   void _checkLockTime() async {

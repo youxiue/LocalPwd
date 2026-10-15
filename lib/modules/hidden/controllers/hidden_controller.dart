@@ -147,8 +147,14 @@ class HiddenController extends GetxController {
     _resubscribe();
   }
 
+  /// 列表订阅了数据流，写库后会自动重新推送，无需手动刷新
   Future<void> toggleFavorite(HiddenPasswordEntry entry) async {
     await _db.hiddenDao.toggleFavorite(entry.id, !entry.isFavorite);
+  }
+
+  /// 设置指定条目的收藏状态（供详情弹窗直接写入目标值）
+  Future<void> setFavorite(String id, bool favorite) async {
+    await _db.hiddenDao.toggleFavorite(id, favorite);
   }
 
   Future<void> deleteEntry(String id) async {

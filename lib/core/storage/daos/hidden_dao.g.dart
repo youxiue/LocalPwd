@@ -7,6 +7,8 @@ mixin _$HiddenDaoMixin on DatabaseAccessor<AppDatabase> {
   $HiddenCategoriesTable get hiddenCategories =>
       attachedDatabase.hiddenCategories;
   $HiddenEntriesTable get hiddenEntries => attachedDatabase.hiddenEntries;
+  $HiddenEntryCategoriesTable get hiddenEntryCategories =>
+      attachedDatabase.hiddenEntryCategories;
   HiddenDaoManager get managers => HiddenDaoManager(this);
 }
 
@@ -20,4 +22,9 @@ class HiddenDaoManager {
       );
   $$HiddenEntriesTableTableManager get hiddenEntries =>
       $$HiddenEntriesTableTableManager(_db.attachedDatabase, _db.hiddenEntries);
+  $$HiddenEntryCategoriesTableTableManager get hiddenEntryCategories =>
+      $$HiddenEntryCategoriesTableTableManager(
+        _db.attachedDatabase,
+        _db.hiddenEntryCategories,
+      );
 }
